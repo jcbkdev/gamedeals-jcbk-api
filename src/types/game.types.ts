@@ -8,4 +8,5 @@ export type Game = {
   main_platform: string;
   platforms: string[];
   tags: string[];
+  igdb_id?: number;
 };

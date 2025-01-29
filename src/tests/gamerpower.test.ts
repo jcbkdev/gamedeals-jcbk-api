@@ -1,6 +1,8 @@
 import exp from "constants";
+
+import { GamerpowerRes } from "../types/gamerpower.types";
+
 import {
-  GamerpowerRes,
   getData,
   getMainPlatform,
   getPlatforms,
@@ -8,7 +10,7 @@ import {
   parseData,
 } from "../services/gamerpower";
 import isUrl from "is-url";
-import { Game } from "../types/game";
+import { Game } from "../types/game.types";
 
 // test("gamerpower getData", async () => {
 //   expect(getData).not.toThrow();

@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "dev": "nodemon src/main.ts",
-    "test": "jest --silent"
+    "test": "jest --silent",
+    "build": "tsc"
   },
   "keywords": [],
   "author": "",

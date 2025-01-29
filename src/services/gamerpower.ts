@@ -1,25 +1,7 @@
 import axios from "axios";
-import { Game } from "../types/game";
+import { Game } from "../types/game.types";
 import isUrl from "is-url";
-
-export type GamerpowerRes = {
-  id: number;
-  title: string;
-  worth: string;
-  thumbnail: string;
-  image: string;
-  description: string;
-  instructions: string;
-  open_giveaway_url: string;
-  published_date: string;
-  type: string;
-  platforms: string;
-  end_date: string;
-  users: number;
-  status: string;
-  gamerpower_url: string;
-  open_giveaway: string;
-};
+import { GamerpowerRes } from "../types/gamerpower.types";
 
 /**
  * Returns data from Gamerpower API
