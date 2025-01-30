@@ -1,0 +1,37 @@
+services:
+  backend:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    volumes:
+      - ./:/app
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - DATABASE_URL=${DATABASE_URL}
+    depends_on:
+      - mongodb
+    command: npm run dev
+
+  mongodb:
+    image: mongo:latest
+    container_name: gamedeals-db
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_INITDB_ROOT_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_INITDB_ROOT_PASSWORD}
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE}
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - mongodb-network
+
+volumes:
+  mongo-data:
+    driver: local
+
+networks:
+  mongodb-network:
+    driver: bridge
