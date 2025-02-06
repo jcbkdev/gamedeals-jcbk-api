@@ -126,7 +126,7 @@ export async function parseData(gameData: GamerpowerRes): Promise<Game | null> {
     main_platform: mainPlatform,
     platforms: platforms,
     tags: [],
-    image: gameData.image,
+    images: [gameData.image],
     url: url,
     end_date: gameData.end_date,
   };

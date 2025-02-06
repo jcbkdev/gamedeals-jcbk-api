@@ -1,10 +1,7 @@
 import { IGDB } from "../services/igdb";
 import { tagFilter } from "../utils/tagFilter";
 
-const client = new IGDB(
-  "eeypmrbeo1ki0u1rpezzghub91dtun",
-  "hejxbzh7aklk10e651tyes5ecbof1n"
-);
+const client = new IGDB(process.env.IGDB_ID!, process.env.IGDB_SECRET!);
 
 test("search", async () => {
   const response = await client.search(

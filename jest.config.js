@@ -2,6 +2,8 @@
 module.exports = {
   testEnvironment: "node",
   transform: {
-    "^.+.tsx?$": ["ts-jest",{}],
+    "^.+.tsx?$": ["ts-jest", {}],
   },
+  setupFiles: ["./jest.setup.js"],
+  testPathIgnorePatterns: ["/node_modules/", "/build/"],
 };

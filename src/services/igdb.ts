@@ -67,8 +67,6 @@ export class IGDB {
       });
     if (!response.data) throw new Error("error getting a response from IGDB");
 
-    console.log(response.data);
-
     return response.data;
   }
 

@@ -82,7 +82,7 @@ describe("data parser", () => {
         name: "Escape Academy",
         description:
           "Become the ultimate Escapist today! Grab Escape Academy for free on Epic Games Store and escape rooms in single player or co-op!",
-        image: "https://www.gamerpower.com/offers/1b/6592e2b40538a.jpg",
+        images: ["https://www.gamerpower.com/offers/1b/6592e2b40538a.jpg"],
         url: "https://store.epicgames.com/en-US/p/escape-academy-bfc2bf",
         end_date: "2025-01-23 23:59:00",
         main_platform: "epicgames",
