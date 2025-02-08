@@ -218,8 +218,13 @@ export async function getTagLib(): Promise<Tag[]> {
 }
 
 //close the connection on shutdown
-process.on("SIGINT", () => {
-  if (client) {
-    client.close();
-  }
-});
+const signals = ["SIGINT", "SIGTERM", "SIGQUIT"];
+signals.forEach((signal) =>
+  process.on(signal, () => {
+    if (client) {
+      client.close();
+    }
+
+    process.exit();
+  })
+);
