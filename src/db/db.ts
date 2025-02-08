@@ -54,8 +54,29 @@ export async function updateDeal(deal: Game, upsert: boolean = false) {
     });
 }
 
+export async function checkActiveDeals() {
+  const deals = await getAllDeals(true);
+
+  await Promise.all(
+    deals.map(async (deal) => {
+      console.log(
+        `Checking status of:\n\tid: ${deal.id}\n\tname: ${deal.name}`
+      );
+      if (Number.isNaN(Date.parse(deal.end_date))) return;
+
+      if (Date.parse(deal.end_date) < Date.now()) {
+        console.log(
+          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}`
+        );
+        await deactivateDeal(deal.id);
+        return;
+      }
+    })
+  );
+}
+
 export async function syncDeals(deals: Game[]) {
-  const dbDeals = await getAllDeals();
+  const dbDeals = await getAllDeals(false);
 
   await Promise.all(
     deals.map(async (deal) => {
@@ -70,15 +91,21 @@ export async function syncDeals(deals: Game[]) {
           return;
         }
 
+        //If deal got activated
+        if (!existingDeal.active && deal.active) {
+          await updateDeal(deal);
+          return;
+        }
+
         //If deal exists in the db
         //Case where the end date is different
-        if (existingDeal.end_date != deal.end_date) {
+        if (existingDeal.end_date != deal.end_date && deal.active) {
           await updateDeal(deal);
           return;
         }
 
         if (Date.parse(existingDeal.end_date) < Date.now()) {
-          await removeDeal(deal.id);
+          await deactivateDeal(deal.id);
           return;
         }
 
@@ -88,6 +115,9 @@ export async function syncDeals(deals: Game[]) {
       }
     })
   );
+
+  await checkActiveDeals();
+  return;
 }
 
 export async function getDeal(deal_id: number) {
@@ -100,10 +130,12 @@ export async function getDeal(deal_id: number) {
   return deal;
 }
 
-export async function getAllDeals() {
+export async function getAllDeals(onlyActive: boolean = true) {
   const db = await connectDb();
 
-  const deals = await db.collection("deals").find<Game>({}).toArray();
+  const query = onlyActive ? { active: true } : {};
+
+  const deals = await db.collection("deals").find<Game>(query).toArray();
 
   return deals;
 }
@@ -116,6 +148,16 @@ export async function removeDeal(deal_id: number) {
   const result = await db.collection("deals").deleteOne(query);
 
   return result.deletedCount === 1;
+}
+
+export async function deactivateDeal(deal_id: number) {
+  let deal = await getDeal(deal_id);
+
+  if (!deal) return;
+
+  deal.active = false;
+  await updateDeal(deal);
+  return;
 }
 
 async function saveFetchDate(): Promise<void> {

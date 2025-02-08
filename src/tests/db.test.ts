@@ -18,6 +18,7 @@ test("db single cycle", async () => {
     images: ["asdfads", "bvcbd"],
     end_date: "N/A",
     url: "https://google.com/",
+    active: true,
   };
   let preDeal = await getDeal(game.id);
   if (preDeal) {

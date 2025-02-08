@@ -88,6 +88,7 @@ describe("data parser", () => {
         main_platform: "epicgames",
         platforms: ["PC", "Epic Games"],
         tags: [],
+        active: true,
       } as Game,
     ],
     [

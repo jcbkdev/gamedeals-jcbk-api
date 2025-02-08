@@ -3,7 +3,8 @@ import dotenvExpand from "dotenv-expand";
 import express from "express";
 import { getData } from "./services/gamerpower";
 import { fetchDeals } from "./utils/fetchDeals";
-import { getAllDeals, syncDeals } from "./db/db";
+import { checkActiveDeals, getAllDeals, syncDeals } from "./db/db";
+import { minToMs } from "./utils/minToMs";
 
 dotenvExpand.expand(dotenv.config());
 
@@ -27,6 +28,16 @@ setInterval(async () => {
     console.error("cycle error", err);
   }
   console.log("cycle ended");
-}, 15 * 60 * 1000);
+}, minToMs(15));
+
+setInterval(async () => {
+  console.log("starting status checkup...");
+  try {
+    await checkActiveDeals();
+  } catch (err) {
+    console.error("checkup error", err);
+  }
+  console.log("checkup ended");
+}, minToMs(1));
 
 app.listen(process.env.PORT);

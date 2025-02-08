@@ -27,7 +27,8 @@ export async function fetchDeals(): Promise<Game[]> {
     if (
       matchingGame.name === gpDeal.name &&
       matchingGame.end_date === gpDeal.end_date &&
-      matchingGame.main_platform === gpDeal.main_platform
+      matchingGame.main_platform === gpDeal.main_platform &&
+      matchingGame.active === gpDeal.active
     ) {
       console.log(
         `Skipping duplicate:\nid:${matchingGame.id}\nname:${matchingGame.name}`
