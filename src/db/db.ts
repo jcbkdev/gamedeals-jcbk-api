@@ -3,6 +3,7 @@ import { Game } from "../types/game.types";
 import { Tag } from "../types/igdb.types";
 import { IGDB } from "../services/igdb";
 import { daysToMs } from "../utils/daysToMs";
+import { getData } from "../services/gamerpower";
 export let client: MongoClient | null = null;
 
 async function connectDb() {
@@ -56,21 +57,41 @@ export async function updateDeal(deal: Game, upsert: boolean = false) {
 
 export async function checkActiveDeals() {
   const deals = await getAllDeals(true);
+  const gpData = await getData();
 
   await Promise.all(
     deals.map(async (deal) => {
       console.log(
         `Checking status of:\n\tid: ${deal.id}\n\tname: ${deal.name}`
       );
-      if (Number.isNaN(Date.parse(deal.end_date))) return;
 
-      if (Date.parse(deal.end_date) < Date.now()) {
+      /**
+       * check if the deal is still active
+       * by checking if the deal is still present as active
+       * fetched from GamerPower
+       * on fail deactivate the deal
+       */
+      if (!gpData.find((gDeal) => gDeal.id === deal.id)) {
         console.log(
-          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}`
+          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: Deactivated by GP`
         );
         await deactivateDeal(deal.id);
         return;
       }
+
+      if (Number.isNaN(Date.parse(deal.end_date))) return;
+
+      if (Date.parse(deal.end_date) < Date.now()) {
+        console.log(
+          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: deal expired`
+        );
+        await deactivateDeal(deal.id);
+        return;
+      }
+
+      console.log(
+        `Deal is still active\n\tid: ${deal.id}\n\tname: ${deal.name}`
+      );
     })
   );
 }
