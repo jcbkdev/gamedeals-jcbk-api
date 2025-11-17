@@ -56,14 +56,16 @@ jobs:
             npm install
             echo "3. Building Express app..."
             npm run build
-            echo "4. Deleting old PM2 process (if any)..."
+            echo "4. Copying .env to build directory..."
+            cp .env ./build/.env
+            echo "5. Deleting old PM2 process (if any)..."
             cd ..
             npx pm2 delete express-app || true
-            echo "5. Starting new PM2 process..."
+            echo "6. Starting new PM2 process..."
             npm run start:prod
-            echo "6. Saving process list for reboot..."
+            echo "7. Saving process list for reboot..."
             npx pm2 save
-            echo "7. Setting up crontab as a watchdog..."
+            echo "8. Setting up crontab as a watchdog..."
             crontab -l 2>/dev/null | grep -Fv "pm2 resurrect" > my_new_cron || true
             echo "* * * * * bash -l -c \"${{ secrets.TARGET_DIR }}/../node_modules/.bin/pm2 resurrect\" >/dev/null 2>> ${{ secrets.TARGET_DIR }}/../pm2_cron_errors.log" >> my_new_cron
             crontab my_new_cron
