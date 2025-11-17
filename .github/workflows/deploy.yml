@@ -1,0 +1,73 @@
+name: Deploy Express App to Hostido
+
+# 1. Trigger: This workflow runs on every push to the 'main' branch
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    name: Deploy to Server
+    runs-on: ubuntu-latest
+
+    steps:
+      # 2. Checkout: Get the latest code from the 'main' branch
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 3. Sync files to server
+      # Using appleboy/scp-action to securely copy files
+      - name: Copy files to server via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          source: "."
+          target: ${{ secrets.TARGET_DIR }}
+          rm: true # Clean destination directory before copy
+          exclude: ".git, node_modules"
+
+      # 4. Run commands on server
+      # Using appleboy/ssh-action to install, build, and restart
+      - name: Run deployment commands on server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: ${{ secrets.SSH_PORT }}
+          script: |
+            echo "✅ Deployment complete. Running server commands..."
+            cd ${{ secrets.TARGET_DIR }}
+
+            # --- Create .env file from secrets ---
+            echo "1. Creating .env file from secrets..."
+            # This creates a new .env file on the server
+            echo "IGDB_ID=${{ secrets.IGDB_ID }}" > .env
+            echo "IGDB_SECRET=${{ secrets.IGDB_SECRET }}" >> .env
+            echo "PORT=${{ secrets.PORT }}" >> .env
+            echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            # --- End of .env section ---
+
+            echo "2. Installing dependencies..."
+            npm install
+            echo "3. Building Express app..."
+            npm run build
+            echo "4. Deleting old PM2 process (if any)..."
+            cd ..
+            npx pm2 delete express-app || true
+            echo "5. Starting new PM2 process..."
+            npm run start:prod
+            echo "6. Saving process list for reboot..."
+            npx pm2 save
+            echo "7. Setting up crontab as a watchdog..."
+            crontab -l 2>/dev/null | grep -Fv "pm2 resurrect" > my_new_cron || true
+            echo "* * * * * bash -l -c \"${{ secrets.TARGET_DIR }}/../node_modules/.bin/pm2 resurrect\" >/dev/null 2>> ${{ secrets.TARGET_DIR }}/../pm2_cron_errors.log" >> my_new_cron
+            crontab my_new_cron
+            rm my_new_cron
+            echo "🚀 Deployment finished."
+            echo "Crontab has been updated. The table output will be ignored."
+            echo "Real errors (if any) will be appended to: ${{ secrets.TARGET_DIR }}/../pm2_cron_errors.log"
