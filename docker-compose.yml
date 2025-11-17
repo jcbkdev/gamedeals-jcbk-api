@@ -12,6 +12,8 @@ services:
       - DATABASE_URL=${DATABASE_URL}
     depends_on:
       - mongodb
+    networks:
+      - mongodb-network
     command: npm run dev
 
   mongodb:
