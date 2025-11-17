@@ -18,7 +18,7 @@ export type Field =
   | "genres"
   | "game_modes"
   | "summary"
-  | "category"
+  | "game_type"
   | "themes";
 
 export type Tag = {

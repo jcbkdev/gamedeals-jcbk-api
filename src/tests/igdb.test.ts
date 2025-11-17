@@ -6,13 +6,13 @@ const client = new IGDB(process.env.IGDB_ID!, process.env.IGDB_SECRET!);
 test("search", async () => {
   const response = await client.search(
     "grand theft auto v",
-    ["name", "category", "cover"],
+    ["name", "game_type", "cover"],
     {
-      field: "category",
+      field: "game_type",
       value: "0",
     }
   );
-  expect(response[0]["category"]).toEqual(0);
+  expect(response[0]["game_type"]).toEqual(0);
   expect(response[0]["name"]).toEqual("Grand Theft Auto V");
   expect(response[0]["id"]).toEqual(1020);
 });
@@ -20,9 +20,9 @@ test("search", async () => {
 test("get cover hash", async () => {
   const response = await client.search(
     "grand theft auto v",
-    ["name", "category", "cover"],
+    ["name", "game_type", "cover"],
     {
-      field: "category",
+      field: "game_type",
       value: "0",
     }
   );
@@ -43,7 +43,7 @@ test("tags", async () => {
     "Grand Theft Auto V",
     ["genres", "game_modes", "themes"],
     {
-      field: "category",
+      field: "game_type",
       value: "0",
     }
   );

@@ -57,12 +57,12 @@ export async function fetchDeals(): Promise<Game[]> {
               "name",
               "summary",
               "cover",
-              "category",
+              "game_type",
               "themes",
               "genres",
               "game_modes",
             ],
-            { field: "category", value: "0" }
+            { field: "game_type", value: "0" }
           )
           .then((res) => res[0]);
       } catch (err) {

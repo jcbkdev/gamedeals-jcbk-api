@@ -11,7 +11,7 @@ export class IGDB {
   }
 
   private async getBearer() {
-    const url = ` https://id.twitch.tv/oauth2/token?client_id=${this.clientId}&client_secret=${this.clientSecret}&grant_type=client_credentials`;
+    const url = `https://id.twitch.tv/oauth2/token?client_id=${this.clientId}&client_secret=${this.clientSecret}&grant_type=client_credentials`;
     const response = await axios.post(url).catch((err) => {
       throw new Error(err);
     });
