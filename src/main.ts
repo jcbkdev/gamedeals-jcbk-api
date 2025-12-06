@@ -1,4 +1,5 @@
 import dotenv from "dotenv";
+import cors from "cors";
 import dotenvExpand from "dotenv-expand";
 import express from "express";
 import { getData } from "./services/gamerpower";
@@ -7,8 +8,24 @@ import { checkActiveDeals, getAllDeals, syncDeals } from "./db/db";
 import { minToMs } from "./utils/minToMs";
 
 dotenvExpand.expand(dotenv.config());
-
 const app = express();
+
+const allowedOrinings = ["https://gamedeals.jcbk.pl/"];
+
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+
+      if (allowedOrinings.indexOf(origin) === -1) {
+        let msg = `The CORS policy for this site does not allow access from the specified Origin.`;
+        return callback(new Error(msg), false);
+      }
+
+      return callback(null, true);
+    },
+  })
+);
 
 app.get("/api/deals", async (req, res) => {
   const games = await getAllDeals();
