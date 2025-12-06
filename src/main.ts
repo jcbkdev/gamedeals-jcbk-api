@@ -10,7 +10,7 @@ import { minToMs } from "./utils/minToMs";
 dotenvExpand.expand(dotenv.config());
 const app = express();
 
-const allowedOrinings = ["https://gamedeals.jcbk.pl/"];
+const allowedOrinings = ["https://gamedeals.jcbk.pl"];
 
 app.use(
   cors({
