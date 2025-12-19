@@ -74,6 +74,8 @@ export async function fetchDeals(): Promise<Game[]> {
         return game;
       }
 
+      if (!igdbGame) return game;
+
       console.log("igdbgame:", igdbGame);
 
       const description = igdbGame["summary"];
