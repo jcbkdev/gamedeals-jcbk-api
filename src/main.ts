@@ -4,13 +4,13 @@ import dotenvExpand from "dotenv-expand";
 import express from "express";
 import { getData } from "./services/gamerpower";
 import { fetchDeals } from "./utils/fetchDeals";
-import { checkActiveDeals, getAllDeals, syncDeals } from "./db/db";
+import { checkActiveDeals, getAllDeals, getDeal, syncDeals } from "./db/db";
 import { minToMs } from "./utils/minToMs";
 
 dotenvExpand.expand(dotenv.config());
 const app = express();
 
-const allowedOrinings = ["https://gamedeals.jcbk.pl"];
+const allowedOrinings = ["https://gamedeals.jcbk.pl", "http://localhost:3000"];
 
 app.use(
   cors({
@@ -30,6 +30,24 @@ app.use(
 app.get("/api/deals", async (req, res) => {
   const games = await getAllDeals();
   res.send(games);
+});
+
+app.get("/api/deal", async (req, res) => {
+  const id = Number(req.get("x-id"));
+
+  if (isNaN(id)) {
+    res.sendStatus(400);
+    return;
+  }
+
+  const game = await getDeal(id);
+
+  if (!game) {
+    res.sendStatus(400);
+    return;
+  }
+
+  res.send(game);
 });
 
 setInterval(async () => {
