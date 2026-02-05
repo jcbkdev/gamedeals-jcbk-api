@@ -4,6 +4,8 @@ import { Tag } from "../types/igdb.types";
 import { IGDB } from "../services/igdb";
 import { daysToMs } from "../utils/daysToMs";
 import { getData } from "../services/gamerpower";
+import { broadcastNotification } from "../services/notifications";
+import { NOTIFICATION_PLATFORMS } from "../types/notification.types";
 export let client: MongoClient | null = null;
 
 async function connectDb() {
@@ -30,11 +32,29 @@ async function connectDb() {
 export async function saveDeal(deal: Game) {
   const db = await connectDb();
 
+  const lowerMain = deal.main_platform.replace(" ", "").toLowerCase();
+
+  const matchingEnum = () => {
+    switch (lowerMain) {
+      case "steam":
+        return NOTIFICATION_PLATFORMS.steam;
+      case "epicgames":
+        return NOTIFICATION_PLATFORMS.epicGames;
+      case "gog":
+        return NOTIFICATION_PLATFORMS.gog;
+    }
+  };
+
   await db
     .collection("deals")
     .insertOne(deal)
-    .then(() => {
+    .then(async () => {
       console.log("Deal inserted: ", deal.name);
+      await broadcastNotification(
+        `🚨 Free game: ${deal.name}`,
+        `Claim it now and keep it! Limited time offer.`,
+        matchingEnum()!,
+      );
     })
     .catch((err) => {
       console.error("An error occured while trying to insert deal", deal, err);
@@ -62,7 +82,7 @@ export async function checkActiveDeals() {
   await Promise.all(
     deals.map(async (deal) => {
       console.log(
-        `Checking status of:\n\tid: ${deal.id}\n\tname: ${deal.name}`
+        `Checking status of:\n\tid: ${deal.id}\n\tname: ${deal.name}`,
       );
 
       /**
@@ -73,7 +93,7 @@ export async function checkActiveDeals() {
        */
       if (!gpData.find((gDeal) => gDeal.id === deal.id)) {
         console.log(
-          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: Deactivated by GP`
+          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: Deactivated by GP`,
         );
         await deactivateDeal(deal.id);
         return;
@@ -83,16 +103,16 @@ export async function checkActiveDeals() {
 
       if (Date.parse(deal.end_date) < Date.now()) {
         console.log(
-          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: deal expired`
+          `Deactivating deal: \n\tid: ${deal.id}\n\tname: ${deal.name}\n\treason: deal expired`,
         );
         await deactivateDeal(deal.id);
         return;
       }
 
       console.log(
-        `Deal is still active\n\tid: ${deal.id}\n\tname: ${deal.name}`
+        `Deal is still active\n\tid: ${deal.id}\n\tname: ${deal.name}`,
       );
-    })
+    }),
   );
 }
 
@@ -134,7 +154,7 @@ export async function syncDeals(deals: Game[]) {
       } catch (err) {
         console.error("An error occured while synchornizing deals", deal, err);
       }
-    })
+    }),
   );
 
   await checkActiveDeals();
@@ -238,6 +258,57 @@ export async function getTagLib(): Promise<Tag[]> {
   return result;
 }
 
+// Notifications
+
+export async function saveSubscriber(token: string, platforms: string[]) {
+  const db = await connectDb();
+
+  await db
+    .collection("subscribers")
+    .updateOne(
+      { token: token },
+      {
+        $set: {
+          token: token,
+          platforms: platforms,
+          subscribedAt: new Date(),
+        },
+      },
+      { upsert: true },
+    )
+    .then(() => console.log(`New subscriber added`))
+    .catch((err) => console.error("Error adding subscribers", err));
+}
+
+export async function getAllSubscribers(): Promise<
+  { token: string; platforms: string[] }[]
+> {
+  const db = await connectDb();
+
+  const docs = await db
+    .collection("subscribers")
+    .find({}, { projection: { token: 1, platforms: 1 } })
+    .toArray();
+
+  return docs.map((d) => {
+    return { token: d.token, platforms: d.platforms };
+  });
+}
+
+export async function removeTokens(tokensToRemove: string[]) {
+  const db = await connectDb();
+
+  await db
+    .collection("subscribers")
+    .deleteMany({
+      token: { $in: tokensToRemove },
+    })
+    .then(() => {
+      console.log(`Cleaned up ${tokensToRemove.length} tokens`);
+    })
+    .catch((err) => console.error("Error removing tokens", err));
+}
+
 //close the connection on shutdown
 const signals = ["SIGINT", "SIGTERM", "SIGQUIT"];
 signals.forEach((signal) =>
@@ -247,5 +318,5 @@ signals.forEach((signal) =>
     }
 
     process.exit();
-  })
+  }),
 );

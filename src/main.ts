@@ -4,11 +4,19 @@ import dotenvExpand from "dotenv-expand";
 import express from "express";
 import { getData } from "./services/gamerpower";
 import { fetchDeals } from "./utils/fetchDeals";
-import { checkActiveDeals, getAllDeals, getDeal, syncDeals } from "./db/db";
+import {
+  checkActiveDeals,
+  getAllDeals,
+  getDeal,
+  removeTokens,
+  saveSubscriber,
+  syncDeals,
+} from "./db/db";
 import { minToMs } from "./utils/minToMs";
 
 dotenvExpand.expand(dotenv.config());
 const app = express();
+app.use(express.json());
 
 const allowedOrinings = ["https://gamedeals.jcbk.pl", "http://localhost:3000"];
 
@@ -48,6 +56,71 @@ app.get("/api/deal", async (req, res) => {
   }
 
   res.send(game);
+});
+
+app.post("/subscribe", async (req, res) => {
+  try {
+    const { token, platforms } = req.body;
+
+    if (!token || typeof token !== "string") {
+      res.status(400).json({ error: "Valid FCM token is required" });
+      return;
+    }
+
+    if (!platforms || !Array.isArray(platforms) || platforms.length === 0) {
+      res.status(400).json({ error: "Platforms array is required" });
+      return;
+    }
+
+    const validPlatforms = [
+      { id: "check-steam", value: "Steam" },
+      { id: "check-epicgames", value: "Epic Games" },
+      { id: "check-gog", value: "GOG" },
+    ];
+
+    let _platforms: string[] = [];
+
+    for (const platform of platforms) {
+      const p = validPlatforms.find((p) => p.id === platform);
+      if (p) {
+        _platforms.push(p.value);
+      }
+    }
+
+    if (_platforms.length !== platforms.length) {
+      res.status(400).json({ error: "One or more platforms are invalid" });
+      return;
+    }
+
+    await saveSubscriber(token, _platforms);
+
+    res.status(200).json({ success: true, message: "Subscribed!" });
+    return;
+  } catch (error) {
+    console.error("Subscription error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
+  }
+});
+
+app.post("/unsubscribe", async (req, res) => {
+  try {
+    const { token } = req.body;
+
+    if (!token || typeof token !== "string") {
+      res.status(400).json({ error: "Valid FCM token is required" });
+      return;
+    }
+
+    await removeTokens([token]);
+
+    res.status(200).json({ success: true, message: "Unsubscribed!" });
+    return;
+  } catch (error) {
+    console.error("Unsubscribing error:", error);
+    res.status(500).json({ error: "Internal Server Error" });
+    return;
+  }
 });
 
 setInterval(async () => {
