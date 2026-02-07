@@ -1,4 +1,4 @@
-import { MongoClient } from "mongodb";
+import { MongoClient, Sort } from "mongodb";
 import { Game } from "../types/game.types";
 import { Tag } from "../types/igdb.types";
 import { IGDB } from "../services/igdb";
@@ -6,6 +6,8 @@ import { daysToMs } from "../utils/daysToMs";
 import { getData } from "../services/gamerpower";
 import { broadcastNotification } from "../services/notifications";
 import { NOTIFICATION_PLATFORMS } from "../types/notification.types";
+import { SteamSaleGame } from "../types/steam.types";
+import { Steam } from "../services/steam";
 export let client: MongoClient | null = null;
 
 async function connectDb() {
@@ -28,6 +30,8 @@ async function connectDb() {
 
   return client.db(process.env.MONGO_INITDB_DATABASE);
 }
+
+// Deals
 
 export async function saveDeal(deal: Game) {
   const db = await connectDb();
@@ -198,6 +202,167 @@ export async function deactivateDeal(deal_id: number) {
 
   deal.active = false;
   await updateDeal(deal);
+  return;
+}
+
+// Sales
+export async function saveSale(game: SteamSaleGame) {
+  const db = await connectDb();
+
+  await db
+    .collection("steam_sales")
+    .insertOne(game)
+    .then(() => {
+      console.log("Steam sale inserted: ", game.name);
+    })
+    .catch((err) => {
+      console.error(
+        "An error occured while trying to insert steam sale",
+        game,
+        err,
+      );
+    });
+}
+
+export async function updateSale(sale: SteamSaleGame, upsert: boolean = false) {
+  const db = await connectDb();
+
+  await db
+    .collection("steam_sales")
+    .updateOne({ id: sale.id }, { $set: { ...sale } }, { upsert: upsert })
+    .then(() => {
+      console.log("Sale updated: ", sale.id);
+    })
+    .catch((err) => {
+      console.error("An error occured while updating a deal", sale.id, err);
+    });
+}
+
+export async function getSale(sale_id: number) {
+  const db = await connectDb();
+
+  const query = { id: sale_id };
+
+  const sale = await db.collection("steam_sales").findOne<SteamSaleGame>(query);
+
+  return sale;
+}
+
+export async function getAllSales(
+  onlyActive: boolean = true,
+  byPercentage: boolean = true,
+) {
+  const db = await connectDb();
+
+  const query = onlyActive ? { active: true } : {};
+  const sortOptions: Sort = byPercentage ? { discount_percent: -1 } : {};
+
+  const sales = await db
+    .collection("steam_sales")
+    .find<SteamSaleGame>(query)
+    .sort(sortOptions)
+    .toArray();
+
+  return sales;
+}
+
+export async function checkActiveSales(onlyTime: boolean = false) {
+  const sales = await getAllSales(true);
+  let steamData: SteamSaleGame[] = [];
+  if (!onlyTime) {
+    steamData = await Steam.fetchSales();
+  }
+
+  await Promise.all(
+    sales.map(async (sale) => {
+      console.log(
+        `Checking status of:\n\tid: ${sale.id}\n\tname: ${sale.name}`,
+      );
+
+      /**
+       * check if the sale is still active
+       * by checking if the sale is still present as active
+       * fetched from Steam
+       * on fail deactivate the deal
+       */
+      if (!onlyTime) {
+        if (!steamData.find((sale) => sale.id === sale.id)) {
+          console.log(
+            `Deactivating sale: \n\tid: ${sale.id}\n\tname: ${sale.name}\n\treason: Deactivated by Steam or the Publisher`,
+          );
+          await deactivateSale(sale.id);
+          return;
+        }
+      }
+
+      if (sale.discount_expiration < Date.now()) {
+        console.log(
+          `Deactivating sale: \n\tid: ${sale.id}\n\tname: ${sale.name}\n\treason: sale expired`,
+        );
+        await deactivateSale(sale.id);
+        return;
+      }
+
+      console.log(
+        `Sale is still active\n\tid: ${sale.id}\n\tname: ${sale.name}`,
+      );
+    }),
+  );
+}
+
+export async function syncSales(sales: SteamSaleGame[]) {
+  const dbSales = await getAllSales(false);
+
+  await Promise.all(
+    sales.map(async (sale) => {
+      const existingSale = dbSales.find((s) => s.id === sale.id);
+
+      try {
+        //If deal does not exist in the db
+        if (!existingSale) {
+          await saveSale(sale);
+          return;
+        }
+
+        //If deal got activated
+        if (!existingSale.active && sale.active) {
+          await updateSale(sale);
+          return;
+        }
+
+        //If deal exists in the db
+        //Case where the end date is different
+        if (
+          existingSale.discount_expiration != sale.discount_expiration &&
+          sale.active
+        ) {
+          await updateSale(sale);
+          return;
+        }
+
+        if (existingSale.discount_expiration < Date.now()) {
+          await deactivateSale(sale.id);
+          return;
+        }
+
+        return;
+      } catch (err) {
+        console.error("An error occured while synchornizing sales", sale, err);
+      }
+    }),
+  );
+
+  await checkActiveSales();
+  return;
+}
+
+export async function deactivateSale(sale_id: number) {
+  let sale = await getSale(sale_id);
+
+  if (!sale) return;
+
+  sale.active = false;
+  await updateSale(sale);
   return;
 }
 

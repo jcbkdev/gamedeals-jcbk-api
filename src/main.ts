@@ -2,17 +2,20 @@ import dotenv from "dotenv";
 import cors from "cors";
 import dotenvExpand from "dotenv-expand";
 import express from "express";
-import { getData } from "./services/gamerpower";
 import { fetchDeals } from "./utils/fetchDeals";
 import {
   checkActiveDeals,
+  checkActiveSales,
   getAllDeals,
+  getAllSales,
   getDeal,
   removeTokens,
   saveSubscriber,
   syncDeals,
+  syncSales,
 } from "./db/db";
 import { minToMs } from "./utils/minToMs";
+import { Steam } from "./services/steam";
 
 dotenvExpand.expand(dotenv.config());
 const app = express();
@@ -32,7 +35,7 @@ app.use(
 
       return callback(null, true);
     },
-  })
+  }),
 );
 
 app.get("/api/deals", async (req, res) => {
@@ -56,6 +59,11 @@ app.get("/api/deal", async (req, res) => {
   }
 
   res.send(game);
+});
+
+app.get("/api/sales", async (req, res) => {
+  const sales = await getAllSales();
+  res.send(sales);
 });
 
 app.post("/subscribe", async (req, res) => {
@@ -124,24 +132,42 @@ app.post("/unsubscribe", async (req, res) => {
 });
 
 setInterval(async () => {
-  console.log("starting cycle...");
+  console.log("starting deals cycle...");
   try {
     const deals = await fetchDeals();
     if (deals.length === 0) {
-      console.log("skipping cycle beacuse of an empty array");
+      console.log("skipping deals cycle beacuse of an empty array");
     } else {
       await syncDeals(deals);
     }
   } catch (err) {
-    console.error("cycle error", err);
+    console.error("sales cycle error", err);
   }
-  console.log("cycle ended");
+  console.log("deals cycle ended");
 }, minToMs(15));
+
+setInterval(
+  async () => {
+    console.log("starting sales cycle...");
+    try {
+      const sales = await Steam.fetchSales();
+      if (sales.length === 0) {
+        console.log("skipping sales cycle because of an empty array");
+      } else {
+        await syncSales(sales);
+      }
+    } catch (err) {
+      console.error("deals cycle error", err);
+    }
+  },
+  minToMs(4 * 60, true),
+);
 
 setInterval(async () => {
   console.log("starting status checkup...");
   try {
     await checkActiveDeals();
+    await checkActiveSales(true);
   } catch (err) {
     console.error("checkup error", err);
   }

@@ -1,5 +1,11 @@
-export function minToMs(min: number) {
-  const calc = min * 60 * 1000;
+export function minToMs(min: number, withJitter: boolean = false) {
+  const baseMs = min * 60 * 1000;
 
-  return calc;
+  if (withJitter) {
+    const jitterAmount = Math.random() * (baseMs * 0.2);
+
+    return Math.floor(baseMs + jitterAmount);
+  }
+
+  return baseMs;
 }
