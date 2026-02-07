@@ -9,6 +9,7 @@ import {
   getAllDeals,
   getAllSales,
   getDeal,
+  getPaginatedSales,
   removeTokens,
   saveSubscriber,
   syncDeals,
@@ -62,7 +63,16 @@ app.get("/api/deal", async (req, res) => {
 });
 
 app.get("/api/sales", async (req, res) => {
-  const sales = await getAllSales();
+  let pag = Number(req.get("x-pag"));
+
+  if (!pag) {
+    pag = 0;
+  } else if (isNaN(pag)) {
+    res.sendStatus(400);
+    return;
+  }
+
+  const sales = await getPaginatedSales(pag);
   res.send(sales);
 });
 

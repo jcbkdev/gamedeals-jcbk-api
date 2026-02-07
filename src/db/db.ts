@@ -266,6 +266,37 @@ export async function getAllSales(
   return sales;
 }
 
+export async function getPaginatedSales(
+  page: number = 0,
+  onlyActive: boolean = true,
+  byPercentage: boolean = true,
+) {
+  const PAGE_SIZE = 6;
+  const db = await connectDb();
+
+  const query = onlyActive ? { active: true } : {};
+  const sortOptions: Sort = byPercentage ? { discount_percent: -1 } : {};
+
+  const sales = await db
+    .collection("steam_sales")
+    .find<SteamSaleGame>(query)
+    .sort(sortOptions)
+    .skip(page * PAGE_SIZE)
+    .limit(PAGE_SIZE + 1)
+    .toArray();
+
+  const hasMore = sales.length > PAGE_SIZE;
+
+  if (hasMore) {
+    sales.pop();
+  }
+
+  return {
+    sales,
+    hasMore,
+  };
+}
+
 export async function checkActiveSales(onlyTime: boolean = false) {
   const sales = await getAllSales(true);
   let steamData: SteamSaleGame[] = [];
