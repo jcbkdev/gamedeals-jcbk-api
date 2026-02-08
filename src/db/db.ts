@@ -255,7 +255,9 @@ export async function getAllSales(
   const db = await connectDb();
 
   const query = onlyActive ? { active: true } : {};
-  const sortOptions: Sort = byPercentage ? { discount_percent: -1 } : {};
+  const sortOptions: Sort = byPercentage
+    ? { discount_percent: -1, _id: 1 }
+    : { _id: 1 };
 
   const sales = await db
     .collection("steam_sales")
@@ -275,7 +277,9 @@ export async function getPaginatedSales(
   const db = await connectDb();
 
   const query = onlyActive ? { active: true } : {};
-  const sortOptions: Sort = byPercentage ? { discount_percent: -1 } : {};
+  const sortOptions: Sort = byPercentage
+    ? { discount_percent: -1, _id: 1 }
+    : { _id: 1 };
 
   const sales = await db
     .collection("steam_sales")
