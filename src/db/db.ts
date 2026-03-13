@@ -330,6 +330,14 @@ export async function checkActiveSales(onlyTime: boolean = false) {
         }
       }
 
+      if (isNaN(sale.discount_expiration)) {
+        console.log(
+          `Deactivating sale: \n\tid: ${sale.id}\n\tname: ${sale.name}\n\treason: sale expired`,
+        );
+        await deactivateSale(sale.id);
+        return;
+      }
+
       if (sale.discount_expiration < Date.now()) {
         console.log(
           `Deactivating sale: \n\tid: ${sale.id}\n\tname: ${sale.name}\n\treason: sale expired`,
