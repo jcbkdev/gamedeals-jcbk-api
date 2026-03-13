@@ -22,14 +22,14 @@ dotenvExpand.expand(dotenv.config());
 const app = express();
 app.use(express.json());
 
-const allowedOrinings = ["https://gamedeals.jcbk.pl", "http://localhost:3000"];
+const allowedOrigins = ["https://gamedeals.jcbk.pl", "http://localhost:3000"];
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
 
-      if (allowedOrinings.indexOf(origin) === -1) {
+      if (allowedOrigins.indexOf(origin) === -1) {
         let msg = `The CORS policy for this site does not allow access from the specified Origin.`;
         return callback(new Error(msg), false);
       }
