@@ -50,6 +50,10 @@ jobs:
             echo "IGDB_SECRET=${{ secrets.IGDB_SECRET }}" >> .env
             echo "PORT=${{ secrets.PORT }}" >> .env
             echo "DATABASE_URL=${{ secrets.DATABASE_URL }}" >> .env
+            echo "MYSQL_HOST=${{ secrets.MYSQL_HOST }}" >> .env
+            echo "MYSQL_USER=${{ secrets.MYSQL_USER }}" >> .env
+            echo "MYSQL_PASS=${{ secrets.MYSQL_PASS }}" >> .env
+            echo "MYSQL_DB=${{ secrets.MYSQL_DB }}" >> .env
             # --- End of .env section ---
 
             # --- CREATE firebase.json file ---
