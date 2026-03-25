@@ -7,7 +7,6 @@ import {
   checkActiveDeals,
   checkActiveSales,
   getAllDeals,
-  getAllSales,
   getDeal,
   getPaginatedSales,
   removeTokens,
@@ -16,7 +15,7 @@ import {
   syncSales,
 } from "./db/db";
 import { minToMs } from "./utils/minToMs";
-import { Steam } from "./services/steam";
+import { SalesTracker } from "./services/sales";
 
 dotenvExpand.expand(dotenv.config());
 const app = express();
@@ -156,22 +155,19 @@ setInterval(async () => {
   console.log("deals cycle ended");
 }, minToMs(15));
 
-setInterval(
-  async () => {
-    console.log("starting sales cycle...");
-    try {
-      const sales = await Steam.fetchSales();
-      if (sales.length === 0) {
-        console.log("skipping sales cycle because of an empty array");
-      } else {
-        await syncSales(sales);
-      }
-    } catch (err) {
-      console.error("deals cycle error", err);
+setInterval(async () => {
+  console.log("starting sales cycle...");
+  try {
+    const sales = await SalesTracker.getMergedSales(false);
+    if (sales.length === 0) {
+      console.log("skipping sales cycle because of an empty array");
+    } else {
+      await syncSales(sales);
     }
-  },
-  minToMs(4 * 60, true),
-);
+  } catch (err) {
+    console.error("deals cycle error", err);
+  }
+}, minToMs(10));
 
 setInterval(async () => {
   console.log("starting status checkup...");

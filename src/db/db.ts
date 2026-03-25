@@ -7,7 +7,7 @@ import { getData } from "../services/gamerpower";
 import { broadcastNotification } from "../services/notifications";
 import { NOTIFICATION_PLATFORMS } from "../types/notification.types";
 import { SteamSaleGame } from "../types/steam.types";
-import { Steam } from "../services/steam";
+import { SalesTracker } from "../services/sales";
 export let client: MongoClient | null = null;
 
 async function connectDb() {
@@ -303,9 +303,9 @@ export async function getPaginatedSales(
 
 export async function checkActiveSales(onlyTime: boolean = false) {
   const sales = await getAllSales(true);
-  let steamData: SteamSaleGame[] = [];
+  let salesData: SteamSaleGame[] = [];
   if (!onlyTime) {
-    steamData = await Steam.fetchSales();
+    salesData = await SalesTracker.getMergedSales(false);
   }
 
   await Promise.all(
@@ -321,7 +321,7 @@ export async function checkActiveSales(onlyTime: boolean = false) {
        * on fail deactivate the deal
        */
       if (!onlyTime) {
-        if (!steamData.find((sale) => sale.id === sale.id)) {
+        if (!salesData.find((sale) => sale.id === sale.id)) {
           console.log(
             `Deactivating sale: \n\tid: ${sale.id}\n\tname: ${sale.name}\n\treason: Deactivated by Steam or the Publisher`,
           );

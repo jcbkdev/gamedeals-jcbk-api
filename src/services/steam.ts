@@ -19,7 +19,7 @@ export class Steam {
     return url;
   }
 
-  private static async getImage(url: string) {
+  public static async getImage(url: string) {
     const response = await axios
       .get(url, { responseType: "arraybuffer" })
       .catch((err) => {
