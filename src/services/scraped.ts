@@ -13,7 +13,9 @@ export class ScrapedDatabase {
       });
 
       const [rows] = await connection.execute(
-        "SELECT appid, name, discount_percent, sale_end_date, header_image FROM active_sales",
+        `SELECT appid, name, discount_percent, sale_end_date, header_image 
+   FROM active_sales 
+   WHERE review_percentage >= 65 AND review_count > 1000`,
       );
 
       await connection.end();
