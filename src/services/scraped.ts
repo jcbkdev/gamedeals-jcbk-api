@@ -1,6 +1,7 @@
 import mysql from "mysql2/promise";
 import { SteamSaleGame } from "../types/steam.types";
 import { Steam } from "./steam";
+import { isatty } from "tty";
 
 export class ScrapedDatabase {
   static async fetchSales(): Promise<SteamSaleGame[]> {
@@ -23,14 +24,18 @@ export class ScrapedDatabase {
       const dbRows = rows as any[];
 
       const mapPromise = dbRows.map(async (row) => {
+        const expirationMs = row.sale_end_date ? row.sale_end_date * 1000 : 0;
+
+        const isActive = expirationMs > Date.now();
+
         const game: SteamSaleGame = {
           id: row.appid,
           name: row.name,
-          discount_expiration: row.sale_end_date ? row.sale_end_date * 1000 : 0,
+          discount_expiration: expirationMs,
           discount_percent: row.discount_percent,
           url: `https://store.steampowered.com/app/${row.appid}/`,
           image: await Steam.getImage(row.header_image),
-          active: true,
+          active: isActive,
         };
         return game;
       });
