@@ -263,6 +263,7 @@ export async function getAllSales(
     .collection("steam_sales")
     .find<SteamSaleGame>(query)
     .sort(sortOptions)
+    .allowDiskUse()
     .toArray();
 
   return sales;
@@ -285,6 +286,7 @@ export async function getPaginatedSales(
     .collection("steam_sales")
     .find<SteamSaleGame>(query)
     .sort(sortOptions)
+    .allowDiskUse()
     .skip(page * PAGE_SIZE)
     .limit(PAGE_SIZE + 1)
     .toArray();
