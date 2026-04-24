@@ -21,7 +21,8 @@
     "is-url": "^1.2.4",
     "mongodb": "^6.12.0",
     "mongoose": "^8.9.5",
-    "mysql2": "^3.20.0"
+    "mysql2": "^3.20.0",
+    "p-limit": "^7.3.0"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",

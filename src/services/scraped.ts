@@ -2,6 +2,8 @@ import mysql from "mysql2/promise";
 import { SteamSaleGame } from "../types/steam.types";
 import { Steam } from "./steam";
 import { isatty } from "tty";
+import { getSale } from "../db/db";
+import pLimit from "p-limit";
 
 export class ScrapedDatabase {
   static async fetchSales(): Promise<SteamSaleGame[]> {
@@ -22,22 +24,34 @@ export class ScrapedDatabase {
       await connection.end();
 
       const dbRows = rows as any[];
+      const filteredRows = [];
 
-      const mapPromise = dbRows.map(async (row) => {
-        const expirationMs = row.sale_end_date ? row.sale_end_date * 1000 : 0;
+      for (const row of dbRows) {
+        const sale = await getSale(row.appid);
+        if (sale === null || !sale.active) {
+          filteredRows.push(row);
+        }
+      }
 
-        const isActive = expirationMs > Date.now();
+      const limit = pLimit(15);
 
-        const game: SteamSaleGame = {
-          id: row.appid,
-          name: row.name,
-          discount_expiration: expirationMs,
-          discount_percent: row.discount_percent,
-          url: `https://store.steampowered.com/app/${row.appid}/`,
-          image: await Steam.getImage(row.header_image),
-          active: isActive,
-        };
-        return game;
+      const mapPromise = filteredRows.map((row) => {
+        return limit(async () => {
+          const expirationMs = row.sale_end_date ? row.sale_end_date * 1000 : 0;
+
+          const isActive = expirationMs > Date.now();
+
+          const game: SteamSaleGame = {
+            id: row.appid,
+            name: row.name,
+            discount_expiration: expirationMs,
+            discount_percent: row.discount_percent,
+            url: `https://store.steampowered.com/app/${row.appid}/`,
+            image: await Steam.getImage(row.header_image),
+            active: isActive,
+          };
+          return game;
+        });
       });
 
       const filtered = (await Promise.all(mapPromise)) as SteamSaleGame[];
