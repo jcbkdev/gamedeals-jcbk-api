@@ -363,13 +363,13 @@ export async function syncSales(sales: SteamSaleGame[]) {
       //If deal does not exist in the db
       if (dbSale === null) {
         await saveSale(sale);
-        return;
+        continue;
       }
 
       //If deal got activated
       if (!dbSale.active && sale.active) {
         await updateSale(sale);
-        return;
+        continue;
       }
 
       //If deal exists in the db
@@ -379,15 +379,15 @@ export async function syncSales(sales: SteamSaleGame[]) {
         sale.active
       ) {
         await updateSale(sale);
-        return;
+        continue;
       }
 
       if (dbSale.discount_expiration < Date.now()) {
         await deactivateSale(sale.id);
-        return;
+        continue;
       }
 
-      return;
+      continue;
     } catch (err) {
       console.error("An error occured while synchronizing sales", sale, err);
     }
