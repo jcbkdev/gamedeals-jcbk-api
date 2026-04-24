@@ -2,20 +2,16 @@ import dotenv from "dotenv";
 import cors from "cors";
 import dotenvExpand from "dotenv-expand";
 import express from "express";
-import { fetchDeals } from "./utils/fetchDeals";
 import {
-  checkActiveDeals,
-  checkActiveSales,
   getAllDeals,
   getDeal,
   getPaginatedSales,
   removeTokens,
   saveSubscriber,
-  syncDeals,
-  syncSales,
 } from "./db/db";
-import { minToMs } from "./utils/minToMs";
-import { SalesTracker } from "./services/sales";
+import { runDealsCycle } from "./workers/dealsCycle";
+import { runSalesCycle } from "./workers/salesCycle";
+import { runStatusCheckCycle } from "./workers/statusCheckCycle";
 
 dotenvExpand.expand(dotenv.config());
 const app = express();
@@ -140,44 +136,8 @@ app.post("/unsubscribe", async (req, res) => {
   }
 });
 
-setInterval(async () => {
-  console.log("starting deals cycle...");
-  try {
-    const deals = await fetchDeals();
-    if (deals.length === 0) {
-      console.log("skipping deals cycle beacuse of an empty array");
-    } else {
-      await syncDeals(deals);
-    }
-  } catch (err) {
-    console.error("sales cycle error", err);
-  }
-  console.log("deals cycle ended");
-}, minToMs(15));
-
-setInterval(async () => {
-  console.log("starting sales cycle...");
-  try {
-    const sales = await SalesTracker.getMergedSales(false);
-    if (sales.length === 0) {
-      console.log("skipping sales cycle because of an empty array");
-    } else {
-      await syncSales(sales);
-    }
-  } catch (err) {
-    console.error("deals cycle error", err);
-  }
-}, minToMs(10));
-
-setInterval(async () => {
-  console.log("starting status checkup...");
-  try {
-    await checkActiveDeals();
-    await checkActiveSales(true);
-  } catch (err) {
-    console.error("checkup error", err);
-  }
-  console.log("checkup ended");
-}, minToMs(1));
+runDealsCycle();
+runSalesCycle();
+runStatusCheckCycle();
 
 app.listen(process.env.PORT);
