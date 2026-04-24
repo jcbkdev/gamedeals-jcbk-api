@@ -356,49 +356,42 @@ export async function checkActiveSales(onlyTime: boolean = false) {
 }
 
 export async function syncSales(sales: SteamSaleGame[]) {
-  const dbSales = await getAllSales(false);
+  for (const sale of sales) {
+    try {
+      const dbSale = await getSale(sale.id);
 
-  await Promise.all(
-    sales.map(async (sale) => {
-      const existingSale = dbSales.find((s) => s.id === sale.id);
-
-      try {
-        //If deal does not exist in the db
-        if (!existingSale) {
-          await saveSale(sale);
-          return;
-        }
-
-        //If deal got activated
-        if (!existingSale.active && sale.active) {
-          await updateSale(sale);
-          return;
-        }
-
-        //If deal exists in the db
-        //Case where the end date is different
-        if (
-          existingSale.discount_expiration != sale.discount_expiration &&
-          sale.active
-        ) {
-          await updateSale(sale);
-          return;
-        }
-
-        if (existingSale.discount_expiration < Date.now()) {
-          await deactivateSale(sale.id);
-          return;
-        }
-
+      //If deal does not exist in the db
+      if (dbSale === null) {
+        await saveSale(sale);
         return;
-      } catch (err) {
-        console.error("An error occured while synchornizing sales", sale, err);
       }
-    }),
-  );
 
-  await checkActiveSales();
-  return;
+      //If deal got activated
+      if (!dbSale.active && sale.active) {
+        await updateSale(sale);
+        return;
+      }
+
+      //If deal exists in the db
+      //Case where the end date is different
+      if (
+        dbSale.discount_expiration != sale.discount_expiration &&
+        sale.active
+      ) {
+        await updateSale(sale);
+        return;
+      }
+
+      if (dbSale.discount_expiration < Date.now()) {
+        await deactivateSale(sale.id);
+        return;
+      }
+
+      return;
+    } catch (err) {
+      console.error("An error occured while synchronizing sales", sale, err);
+    }
+  }
 }
 
 export async function deactivateSale(sale_id: number) {
